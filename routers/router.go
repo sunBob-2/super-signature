@@ -20,10 +20,10 @@ func InitRouter() *gin.Engine {
 	//启用https
 	r.Use(TlsHandler())
 	//swagger文档
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	//加载模板文件
 	r.LoadHTMLGlob("routers/templates/*")
-	apiV1 := r.Group("/api/v1")
+	apiV1 := r.Group("/api")
 	{
 		apiV1.POST("/uploadAppleAccount", v1.UploadAppleAccount)
 		apiV1.POST("/deleteAppleAccount", v1.DeleteAppleAccount)
@@ -33,6 +33,7 @@ func InitRouter() *gin.Engine {
 		apiV1.POST("/getUDID", v1.GetUDID)
 		apiV1.GET("/getApp", v1.GetApp)
 		apiV1.GET("/download", v1.Download)
+		apiV1.HEAD("/download", v1.Download)
 		apiV1.GET("/test", v1.Test)
 	}
 	return r

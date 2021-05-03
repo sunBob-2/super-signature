@@ -163,10 +163,8 @@ func signature(appleAccount models.AppleAccount, devicesId string, applePackage 
 	log.Println("mobileprovisionPath: " + mobileprovisionPath)
 	var ipaPath = setting.PathSetting.TemporaryDownloadPath + fileName + ".ipa"
 	// 拿到账号下对应的pem证书、保存的key私钥、获取到的描述文件mobileprovision对IPA签名
-	err = util.RunCmd(fmt.Sprintf("isign -c %s -k %s -p %s  -o %s %s",
-		appleAccount.PemPath, setting.CSRSetting.KeyPath,
-		mobileprovisionPath, ipaPath,
-		applePackage.IPAPath))
+	err = util.RunCmd(fmt.Sprintf("zsign -c %s -k %s -m %s -o %s %s/",appleAccount.PemPath, setting.CSRSetting.KeyPath, mobileprovisionPath, ipaPath, applePackage.IPAPath))
+//    err = util.RunCmd(fmt.Sprintf("echo hello"))
 	if err != nil {
 		log.Printf("%s", err.Error())
 		return "", err
@@ -191,6 +189,18 @@ func signature(appleAccount models.AppleAccount, devicesId string, applePackage 
                                     <key>url</key>
                                     <string>%s</string>
                                 </dict>
+                                <dict>
+					  <key>kind</key>
+					<string>display-image</string>
+					<key>url</key>
+					<string>%s</string>
+				</dict>
+				<dict>
+					<key>kind</key>
+					<string>full-size-image</string>
+					<key>url</key>
+					<string>%s</string>
+				</dict>
                         </array>
                         <key>metadata</key>
                         <dict>
@@ -201,12 +211,12 @@ func signature(appleAccount models.AppleAccount, devicesId string, applePackage 
                             <key>kind</key>
                             <string>software</string>
                             <key>title</key>
-                            <string>App</string>
+                            <string>%s</string>
                         </dict>
                 </dict>
         </array>
 </dict>
-</plist>`, setting.URLSetting.URL+"/api/v1/download?id="+ipaID, applePackage.BundleIdentifier, applePackage.Version)
+</plist>`, setting.URLSetting.URL+"/api/download?id="+ipaID,setting.URLSetting.URL+"/api/download?id="+applePackage.IconLink,setting.URLSetting.URL+"/api/download?id="+applePackage.IconLink, applePackage.BundleIdentifier, applePackage.Version, applePackage.Name)
 	var plistPath = setting.PathSetting.TemporaryDownloadPath + fileName + ".plist"
 	err = util.CreateFile(plistContent, plistPath)
 	if err != nil {
@@ -222,7 +232,7 @@ func signature(appleAccount models.AppleAccount, devicesId string, applePackage 
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s/api/v1/getApp?plistID=%s&packageId=%d", setting.URLSetting.URL, plistID, applePackage.ID), nil
+	return fmt.Sprintf("%s/api/getApp?plistID=%s&packageId=%d", setting.URLSetting.URL, plistID, applePackage.ID), nil
 }
 
 func GetApplePackageByID(packageId string) (applePackage *models.ApplePackage, err error) {

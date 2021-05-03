@@ -180,7 +180,7 @@ func PngRevertOptimizationWithSize(reader io.Reader, writer io.Writer) (int, int
 		return 0, 0, errors.New("Read error" + err.Error())
 	}
 
-	if bytes.Compare([]byte("\x89PNG\r\n\x1a\n"), header) != 0 {
+    if bytes.Compare([]byte("\x89PNG\r\n\x1a\n"), header) != 0 {
 		return 0, 0, ErrPngHeader
 	}
 

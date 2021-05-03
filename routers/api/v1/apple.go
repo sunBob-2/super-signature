@@ -44,12 +44,12 @@ func UploadAppleAccount(c *gin.Context) {
 	}
 	iss := c.PostForm("iss")
 	if iss == "" {
-		appG.BadResponse("iss 不能为空")
+		appG.BadResponse("Issuer ID 不能为空")
 		return
 	}
 	kid := c.PostForm("kid")
 	if kid == "" {
-		appG.BadResponse("kid 不能为空")
+		appG.BadResponse("秘钥 ID 不能为空")
 		return
 	}
 	num, err := apple_service.AddAppleAccount(iss, kid, string(p8FileContent), setting.CSRSetting.Csr)

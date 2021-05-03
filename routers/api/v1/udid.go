@@ -43,8 +43,8 @@ func GetUDID(c *gin.Context) {
 		appG.ErrorResponse(err.Error())
 		return
 	}
-	log.Println("---301重定向到APP安装页面---")
-	// 301重定向
+	log.Println(plistLink)
+	log.Println("---301跳转到APP安装页面---")
 	c.Redirect(http.StatusMovedPermanently, plistLink)
 }
 
@@ -71,7 +71,7 @@ func GetApp(c *gin.Context) {
 		return
 	}
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
-		"plistPath": fmt.Sprintf("%s/api/v1/download?id=%s", setting.URLSetting.URL, plistID),
+		"plistPath": fmt.Sprintf("%s/api/download?id=%s", setting.URLSetting.URL, plistID),
 		"name":      applePackage.Name,
 		"summary":   applePackage.Summary,
 	})

@@ -1,7 +1,5 @@
 # README.md
 
-![扫码_搜索联合传播样式-标准色版.png](https://cdn.nlark.com/yuque/0/2021/png/1077776/1612960247290-a878d022-cdd1-4f8b-ad39-98bafbe48894.png#align=left&display=inline&height=624&margin=%5Bobject%20Object%5D&name=%E6%89%AB%E7%A0%81_%E6%90%9C%E7%B4%A2%E8%81%94%E5%90%88%E4%BC%A0%E6%92%AD%E6%A0%B7%E5%BC%8F-%E6%A0%87%E5%87%86%E8%89%B2%E7%89%88.png&originHeight=624&originWidth=2092&size=5221770&status=done&style=none&width=2092)
-
 ## 这是什么
 一个用go实现的iOS重签名模块，即市面上的iOS超级签名、蒲公英ios内测分发原理
 
@@ -11,40 +9,34 @@
 
 运行环境：Linux
 
+依赖：openssl, openssl-devel, g++
+
 ## 前提（重要）
 1.生成ios.csr和ios.key文件
 ```bash
 openssl genrsa -out ios.key 2048
 openssl req -new -sha256 -key ios.key -out ios.csr
 ```
-2.需要部署到公网，且需要https（获取UUID过程苹果服务器会回调我们的接口），自行配置ssl证书（项目根目录下的ssl.key和ssl.pem）
+2.需要部署到公网，且需要https（获取UUID过程苹果服务器会回调我们的接口），自行配置ssl证书（项目根目录下的ssl.key、ssl.pem、server.crt和ca.crt）
 
 3.更改app.ini配置文件域名等信息
 
 ## 手动部署
 
 ```bash
-git clone https://github.com/togettoyou/super-signature.git
-# 进入项目isign目录下
-cd super-signature/isign
-# 更改Python默认编码
-cp ./sitecustomize.py /usr/lib/python2.7/sitecustomize.py
-# 验证(输出utf-8即更改成功)
-python -c "import sys; print sys.getdefaultencoding()"
-# 安装isign
-tar xvf isign.tar.gz
-cd isign
-./version.sh
-python setup.py build
-python setup.py install
+git clone https://github.com/sunBob-2/super-signature.git
+# 进入项目zsign目录下
+cd super-signature/zsign
+# 安装zsign
+g++ *.cpp common/*.cpp -lcrypto -std=c++11 -o zsign
+sudo cp ./zsign /usr/bin/zsign
 # 验证
-isign -h
-# 开启go mod
-go env -w GO111MODULE=on
+zsign -h
 # 回到项目目录(记得更改app.ini配置信息)
-cd super-signature
+cd ../
+# 开启go mod并运行
+go env -w GO111MODULE=on
 go run main.go
-# 浏览器访问 http://localhost:10016/swagger/index.html
 ```
 
 ## 使用docker部署
@@ -53,6 +45,10 @@ docker-compose up
 ```
 
 详见`Dockerfile`和`docker-compose.yml`文件
+
+## API接口文档
+
+浏览器访问 https://127.0.0.1:4443/docs/index.html
 
 ## 原理
 [语雀浏览](https://www.yuque.com/togettoyou/cjqm/rbk50t)
@@ -63,8 +59,6 @@ docker-compose up
 1. 借助App Store Connect API在开发者中心添加UDID、创建证书等
 1. 重签名（使用isign开源项目实现在linux服务器上重签名） 
 1. 将ipa包上传到服务器上，配置itms-service服务来做分发
-
-
 
 > API
 
@@ -92,53 +86,20 @@ docker-compose up
   ]
 }
 ```
-> 界面截图
 
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/1077776/1614159853374-673e82af-a2f2-479d-9ef8-03da193ed801.png#align=left&display=inline&height=478&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1970&originWidth=1154&size=504847&status=done&style=none&width=280)
-![image.png](https://cdn.nlark.com/yuque/0/2021/png/1077776/1614159891066-ce68c4bf-60d7-49ae-864b-270e67a72a74.png#align=left&display=inline&height=477&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1964&originWidth=1154&size=691524&status=done&style=none&width=280)
-
-
-# 步骤：
+# 这个程序做了什么？
 
 ### 1. 添加Apple开发者账号
 
 > API接口文档：[https://developer.apple.com/documentation/appstoreconnectapi](https://developer.apple.com/documentation/appstoreconnectapi)
 
 
-
-使用App Store Connect API需要到[https://appstoreconnect.apple.com/access/api](https://appstoreconnect.apple.com/access/api) 生成API密钥P8文件，
+使用App Store Connect API需要到[https://appstoreconnect.apple.com/access/api](https://appstoreconnect.apple.com/access/api)生成API密钥P8文件，
 以及对应的密钥ID和账号的Issuer ID。
 ![image.png](https://cdn.nlark.com/yuque/0/2021/png/1077776/1614157937920-e048fc1b-b8ef-4b08-a559-bcf0a9b72c39.png#align=left&display=inline&height=323&margin=%5Bobject%20Object%5D&name=image.png&originHeight=970&originWidth=3284&size=177328&status=done&style=none&width=1094.6666666666667)
 
-首先创建一个结构体存放p8(下载的API密钥文件内容)，kid (密钥ID)，Iss (Issuer ID)
-```go
-type Authorize struct {
-	P8  string
-	Iss string
-	Kid string
-}
-```
-使用fasthttp来发送http请求
-```go
-func (a Authorize) httpRequest(method string, url string, body []byte) (*fasthttp.Response, error) {
-	token, err := a.createToken()
-	if err != nil {
-		return nil, err
-	}
-	req := fasthttp.AcquireRequest()
-	resp := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseRequest(req)
-	req.Header.SetContentType("application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
-	req.Header.SetMethod(method)
-	req.SetRequestURI(url)
-	req.SetBody(body)
-	if err := fasthttp.Do(req, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-```
+正式使用中，使用 API 文档中的 Try it out 按钮来进入测试模式，选择 p8 文件并依次输入 Issuer ID 和密钥 ID，点击 Execute 按钮来提交请求，如无意外开发者账户已储存于数据库中。
+
 token验证关键代码
 ```go
 func (a Authorize) createToken() (string, error) {
@@ -204,7 +165,7 @@ if err != nil {
         <key>PayloadContent</key>
         <dict>
             <key>URL</key>
-            <string>https://qq.com</string> //回调接收UDID等信息的，借用这个回调地址将udid传到服务器后台
+            <string>https://xxx.xxx.org/api/getUDID?id=0</string> //回调接收UDID等信息的，借用这个回调地址将udid传到服务器后台
             <key>DeviceAttributes</key>
             <array>
                 <string>UDID</string>
@@ -271,20 +232,12 @@ openssl x509 -in ios_development.cer -inform DER -outform PEM -out ios_developme
 > 四大材料已凑齐！
 > 
 
-> 使用开源项目isign实现在Linux重签名(得到新的重签名安装包new.ipa)
+> 使用开源项目zsign实现重签名(得到新的重签名安装包new.ipa)
 
 ```bash
-isign -c ios_development.pem -k ios.key -p 描述文件.mobileprovision  -o new.ipa Runner.ipa
+zsign -c ios_development.pem -k ios.key -m 描述文件.mobileprovision  -o new.ipa Runner.ipa
 ```
 
-
-附：isign安装教程([https://github.com/apperian/isign](https://github.com/apperian/isign))
-```bash
-./version.sh
-python setup.py build
-python setup.py install
-```
-[isign.zip](https://www.yuque.com/attachments/yuque/0/2020/zip/1077776/1591342709219-ffa8ad4c-9f96-45c1-8b99-34965b58ec4c.zip?_lake_card=%7B%22uid%22%3A%221591342692957-0%22%2C%22src%22%3A%22https%3A%2F%2Fwww.yuque.com%2Fattachments%2Fyuque%2F0%2F2020%2Fzip%2F1077776%2F1591342709219-ffa8ad4c-9f96-45c1-8b99-34965b58ec4c.zip%22%2C%22name%22%3A%22isign.zip%22%2C%22size%22%3A34601410%2C%22type%22%3A%22application%2Fzip%22%2C%22ext%22%3A%22zip%22%2C%22progress%22%3A%7B%22percent%22%3A99%7D%2C%22status%22%3A%22done%22%2C%22percent%22%3A0%2C%22id%22%3A%22s3MfS%22%2C%22card%22%3A%22file%22%7D)
 
 
 ### 4. IPA分发
@@ -328,46 +281,3 @@ python setup.py install
 <a href="itms-services://?action=download-manifest&url={{ .plist下载地址 }}">安装APP</a>
 ```
 ![image.png](https://cdn.nlark.com/yuque/0/2021/png/1077776/1615343913212-a39aff60-a561-4d1c-b886-14efdf9eaeed.png#align=left&display=inline&height=575&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1724&originWidth=1034&size=353178&status=done&style=none&width=344.6666666666667)
-
-
-### 附：常见问题
-
-1. 使用进行重签名时，如下报错：
-```shell
-Traceback (most recent call last):
-  File "/bin/isign", line 4, in <module>
-    __import__('pkg_resources').run_script('isign==1.6.15.1589436891.dev72+root', 'isign')
-  File "/usr/lib/python2.7/site-packages/pkg_resources/__init__.py", line 666, in run_script
-    self.require(requires)[0].run_script(script_name, ns)
-  File "/usr/lib/python2.7/site-packages/pkg_resources/__init__.py", line 1462, in run_script
-    exec(code, namespace, namespace)
-  File "/usr/lib/python2.7/site-packages/isign-1.6.15.1589436891.dev72+root-py2.7.egg/EGG-INFO/scripts/isign", line 199, in <module>
-    isign.resign(app_path, **kwargs)
-  File "/usr/lib/python2.7/site-packages/isign-1.6.15.1589436891.dev72+root-py2.7.egg/isign/isign.py", line 79, in resign
-    alternate_entitlements_path)
-  File "/usr/lib/python2.7/site-packages/isign-1.6.15.1589436891.dev72+root-py2.7.egg/isign/archive.py", line 397, in resign
-    ua = archive.unarchive_to_temp()
-  File "/usr/lib/python2.7/site-packages/isign-1.6.15.1589436891.dev72+root-py2.7.egg/isign/archive.py", line 262, in unarchive_to_temp
-    process_watchkit(app_dir, REMOVE_WATCHKIT)
-  File "/usr/lib/python2.7/site-packages/isign-1.6.15.1589436891.dev72+root-py2.7.egg/isign/archive.py", line 78, in process_watchkit
-    watchkit_paths = get_watchkit_paths(root_bundle_path)
-  File "/usr/lib/python2.7/site-packages/isign-1.6.15.1589436891.dev72+root-py2.7.egg/isign/archive.py", line 63, in get_watchkit_paths
-    bundle = Bundle(path)
-  File "/usr/lib/python2.7/site-packages/isign-1.6.15.1589436891.dev72+root-py2.7.egg/isign/bundle.py", line 55, in __init__
-    log.debug(u"Missing/invalid CFBundleSupportedPlatforms value in {}".format(self.info_path))
-UnicodeDecodeError: 'ascii' codec can't decode byte 0xe9 in position 26: ordinal not in range(128)
-```
-这是Python的默认编码为ascii导致的，只需要改为utf-8即可解决。
-直接在`/usr/lib/python2.7/site-packages`(具体路径结合实际情况)下新建一个`sitecustomize.py`文件(若不存在`site-packages`目录，则直接在`/usr/lib/python2.7`下创建)：
-```python
-# sitecustomize.py
-# this file can be anywhere in your Python path,
-# but it usually goes in ${pythondir}/lib/site-packages/
-import sys
-sys.setdefaultencoding('utf-8')
-```
-![image.png](https://cdn.nlark.com/yuque/0/2020/png/1077776/1590652483792-7a374715-9187-41b0-a1ea-f37b3881ebfd.png#align=left&display=inline&height=315&margin=%5Bobject%20Object%5D&name=image.png&originHeight=630&originWidth=612&size=39613&status=done&style=none&width=306)
-
-验证是否成功：
-命令行输入`python -c "import sys; print sys.getdefaultencoding()"`
-![image.png](https://cdn.nlark.com/yuque/0/2020/png/1077776/1590652388536-09409bb1-5ecf-4d5a-ad21-1e7544bcb5fd.png#align=left&display=inline&height=23&margin=%5Bobject%20Object%5D&name=image.png&originHeight=46&originWidth=867&size=7550&status=done&style=none&width=433.5)

@@ -18,7 +18,7 @@ services:
     build: .
     image: super-signature:v2
     ports:
-      - "10016:10016"
+      - "4443:4443"
     depends_on:
       - mysql-super-signature
 
@@ -28,4 +28,4 @@ services:
 #  docker-compose up -d #后台运行
 #  docker ps -a 查询super-signature:v1的容器ID 例：2371573738c0
 #  启动web服务 docker start 2371573738c0
-#  浏览器访问 http://localhost:9999/swagger/index.html
+#  浏览器访问 https://localhost:4443/docs/index.html

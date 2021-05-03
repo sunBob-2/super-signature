@@ -34,14 +34,14 @@ func GetAllIPA() ([]ApplePackage, error) {
 	for _, v := range applePackageList {
 		applePackages = append(applePackages, ApplePackage{
 			ID:               v.ID,
-			IconLink:         setting.URLSetting.URL + "/api/v1/download?id=" + v.IconLink,
+			IconLink:         setting.URLSetting.URL + "/api/download?id=" + v.IconLink,
 			BundleIdentifier: v.BundleIdentifier,
 			Name:             v.Name,
 			Version:          v.Version,
 			BuildVersion:     v.BuildVersion,
 			MiniVersion:      v.MiniVersion,
 			Summary:          v.Summary,
-			AppLink:          setting.URLSetting.URL + "/api/v1/download?id=" + v.MobileConfigLink,
+			AppLink:          setting.URLSetting.URL + "/api/download?id=" + v.MobileConfigLink,
 			Size:             v.Size,
 			Count:            v.Count,
 		})
@@ -64,7 +64,7 @@ func DeleteIPAById(id string) error {
 		return err
 	}
 	//删除ipa
-	err = os.Remove(applePackage.IPAPath)
+	err = util.RunCmd(fmt.Sprintf("rm -rf %s", applePackage.IPAPath))
 	if err != nil {
 		return err
 	}
@@ -102,6 +102,13 @@ func DeleteIPAById(id string) error {
 //解析IPA
 func AnalyzeIPA(name, ipaPath, summary string) (*ApplePackage, error) {
 	//获取IPA信息
+	var ipaPath2 = ipaPath
+    ipaPath = ipaPath+".tmp"
+    err := util.RunCmd(fmt.Sprintf("mv %s %s",ipaPath2,ipaPath))
+	if err != nil {
+		log.Printf("%s", err.Error())
+		return nil, err
+	}
 	appInfo, err := util.NewAppParser(setting.PathSetting.UploadPath+name+".png", ipaPath)
 	if err != nil {
 		return nil, err
@@ -120,7 +127,7 @@ func AnalyzeIPA(name, ipaPath, summary string) (*ApplePackage, error) {
 		MiniVersion:      appInfo.Info.MinimumOSVersion,
 		Summary:          summary,
 		MobileConfigLink: "",
-		IPAPath:          ipaPath,
+		IPAPath:          ipaPath2,
 		Size:             util.Decimal(float64(appInfo.Size) / 1000000),
 		Count:            0,
 	}
@@ -143,16 +150,31 @@ func AnalyzeIPA(name, ipaPath, summary string) (*ApplePackage, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = util.RunCmd(fmt.Sprintf("unzip -q %s -d %s/",ipaPath,ipaPath2))
+	if err != nil {
+		log.Printf("%s", err.Error())
+		return nil, err
+	}
+	err = os.Remove(ipaPath)
+	if err != nil {
+		return nil, err
+	}
+	ipaPath = ipaPath2
+	err = util.RunCmd(fmt.Sprintf("cp %s/Payload/%s.app/AppIcon60x60@3x.png %s",ipaPath,appInfo.Info.CFBundleExecutable,setting.PathSetting.UploadPath + name + ".png"))
+	if err != nil {
+		log.Printf("%s", err.Error())
+		return nil, err
+	}
 	return &ApplePackage{
 		ID:               applePackage.ID,
-		IconLink:         setting.URLSetting.URL + "/api/v1/download?id=" + applePackage.IconLink,
+		IconLink:         setting.URLSetting.URL + "/api/download?id=" + applePackage.IconLink,
 		BundleIdentifier: applePackage.BundleIdentifier,
 		Name:             applePackage.Name,
 		Version:          applePackage.Version,
 		BuildVersion:     applePackage.BuildVersion,
 		MiniVersion:      applePackage.MiniVersion,
 		Summary:          applePackage.Summary,
-		AppLink:          setting.URLSetting.URL + "/api/v1/download?id=" + applePackage.MobileConfigLink,
+		AppLink:          setting.URLSetting.URL + "/api/download?id=" + applePackage.MobileConfigLink,
 		Size:             applePackage.Size,
 		Count:            applePackage.Count,
 	}, nil
@@ -166,7 +188,7 @@ func creatUDIDMobileconfig(name string, id int) (string, error) {
         <key>PayloadContent</key>
         <dict>
             <key>URL</key>
-            <string>%s/api/v1/getUDID?id=%d</string>
+            <string>%s/api/addDevice?id=%d</string>
             <key>DeviceAttributes</key>
             <array>
                 <string>UDID</string>
@@ -177,25 +199,34 @@ func creatUDIDMobileconfig(name string, id int) (string, error) {
             </array>
         </dict>
         <key>PayloadOrganization</key>
-        <string>仅用于查询设备UDID安装APP</string>
+        <string>yyyr</string>
         <key>PayloadDisplayName</key>
-        <string>仅用于查询设备UDID安装APP</string>
+        <string>设备信息获取</string>
         <key>PayloadVersion</key>
         <integer>1</integer>
         <key>PayloadUUID</key>
         <string>c4df5a3a-81e1-430f-b163-d358bc199327</string>
         <key>PayloadIdentifier</key>
-        <string>com.togettoyou.UDID-server</string>
+        <string>org.yyyr.signapp</string>
         <key>PayloadDescription</key>
-        <string>仅用于查询设备UDID安装APP</string>
+        <string>获取设备信息</string>
         <key>PayloadType</key>
         <string>Profile Service</string>
     </dict>
 </plist>`, setting.URLSetting.URL, id)
-	var path = setting.PathSetting.UploadPath + name + ".mobileconfig"
+	var path = setting.PathSetting.UploadPath + name + ".mobileconfig2"
 	err := util.CreateFile(xml, path)
 	if err != nil {
 		return "", err
 	}
-	return path, nil
+	var path2 = setting.PathSetting.UploadPath + name + ".mobileconfig"
+	err = util.RunCmd(fmt.Sprintf("openssl smime -sign -in %s -out %s -signer ./server.crt -inkey ./ssl.key -certfile ./ca.crt -outform der -nodetach", path, path2))
+	if err != nil {
+		return "", err
+	}
+	err = os.Remove(setting.PathSetting.UploadPath + name + ".mobileconfig2")
+	if err != nil {
+		return "", err
+	}
+	return path2, nil
 }

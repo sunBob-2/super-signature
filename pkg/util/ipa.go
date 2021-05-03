@@ -18,7 +18,7 @@ var (
 )
 
 const (
-	iosExt = ".ipa"
+	iosExt = ".tmp"
 )
 
 type AppInfo struct {
@@ -29,6 +29,7 @@ type AppInfo struct {
 
 type iosPlist struct {
 	CFBundleName         string `plist:"CFBundleName"`
+    CFBundleExecutable   string `plist:"CFBundleExecutable"`
 	CFBundleDisplayName  string `plist:"CFBundleDisplayName"`
 	CFBundleVersion      string `plist:"CFBundleVersion"`
 	CFBundleShortVersion string `plist:"CFBundleShortVersionString"`
@@ -106,26 +107,26 @@ func parseIpaIcon(iconPath string, iconFile *zip.File) error {
 		return ErrNoIcon
 	}
 	//打开源文件
-	rc, err := iconFile.Open()
-	if err != nil {
-		return err
-	}
-	defer rc.Close()
+	//rc, err := iconFile.Open()
+	//if err != nil {
+	//	return err
+	//}
+	//defer rc.Close()
 	//转化还原回正常png
-	var w bytes.Buffer
-	err = PngRevertOptimization(rc, &w)
-	if err != nil {
-		return err
-	}
+	//var w bytes.Buffer
+	//err = PngRevertOptimization(rc, &w)
+	//if err != nil {
+	//	return err
+	//}
 	//创建文件
-	file, err := os.Create(iconPath)
-	if err != nil {
-		return err
-	}
+	//file, err := os.Create(iconPath)
+	//if err != nil {
+	//	return err
+	//}
 	//写入
-	_, err = w.WriteTo(file)
-	if err != nil {
-		return err
-	}
+	//_, err = w.WriteTo(file)
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }

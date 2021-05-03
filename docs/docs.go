@@ -26,7 +26,7 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/deleteAppleAccount": {
+        "/api/deleteAppleAccount": {
             "post": {
                 "produces": [
                     "application/json"
@@ -57,7 +57,7 @@ var doc = `{
                 }
             }
         },
-        "/api/v1/deletePackage": {
+        "/api/deletePackage": {
             "post": {
                 "produces": [
                     "application/json"
@@ -88,7 +88,7 @@ var doc = `{
                 }
             }
         },
-        "/api/v1/getAllPackage": {
+        "/api/getAllPackage": {
             "get": {
                 "produces": [
                     "application/json"
@@ -110,7 +110,7 @@ var doc = `{
                 }
             }
         },
-        "/api/v1/test": {
+        "/api/test": {
             "get": {
                 "produces": [
                     "application/json"
@@ -132,7 +132,7 @@ var doc = `{
                 }
             }
         },
-        "/api/v1/uploadAppleAccount": {
+        "/api/uploadAppleAccount": {
             "post": {
                 "produces": [
                     "application/json"
@@ -177,7 +177,7 @@ var doc = `{
                 }
             }
         },
-        "/api/v1/uploadPackage": {
+        "/api/uploadPackage": {
             "post": {
                 "produces": [
                     "application/json"

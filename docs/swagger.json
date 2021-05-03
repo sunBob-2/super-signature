@@ -1,14 +1,14 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "iOS超级签名API接口文档",
-        "title": "iOS超级签名",
+        "description": "自动添加设备/签名接口文档",
+        "title": "苹果开发者自动添加设备/签名",
         "contact": {},
         "license": {},
         "version": "1.0"
     },
     "paths": {
-        "/api/v1/deleteAppleAccount": {
+        "/api/deleteAppleAccount": {
             "post": {
                 "produces": [
                     "application/json"
@@ -39,7 +39,7 @@
                 }
             }
         },
-        "/api/v1/deletePackage": {
+        "/api/deletePackage": {
             "post": {
                 "produces": [
                     "application/json"
@@ -70,7 +70,7 @@
                 }
             }
         },
-        "/api/v1/getAllPackage": {
+        "/api/getAllPackage": {
             "get": {
                 "produces": [
                     "application/json"
@@ -92,7 +92,7 @@
                 }
             }
         },
-        "/api/v1/test": {
+        "/api/test": {
             "get": {
                 "produces": [
                     "application/json"
@@ -114,7 +114,7 @@
                 }
             }
         },
-        "/api/v1/uploadAppleAccount": {
+        "/api/uploadAppleAccount": {
             "post": {
                 "produces": [
                     "application/json"
@@ -159,7 +159,7 @@
                 }
             }
         },
-        "/api/v1/uploadPackage": {
+        "/api/uploadPackage": {
             "post": {
                 "produces": [
                     "application/json"
