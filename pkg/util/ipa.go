@@ -58,15 +58,15 @@ func NewAppParser(iconPath, ipaPath string) (*AppInfo, error) {
 		case reInfoPlist.MatchString(f.Name):
 			plistFile = f
 		case strings.Contains(f.Name, "AppIcon60x60@3x"):
-			if iconFile == nil {
+			if iosIconFile == nil {
 		        iosIconFile = f
 	        }
 		case strings.Contains(f.Name, "AppIcon76x76@2x"):
-		    if iconFile == nil {
+		    if iosIconFile == nil {
 		        iosIconFile = f
 	        }
 		case strings.Contains(f.Name, "AppIcon76x76@2x~ipad"):
-		    if iconFile == nil {
+		    if iosIconFile == nil {
 		        iosIconFile = f
 	        }
 		}
