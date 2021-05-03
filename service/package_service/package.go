@@ -162,8 +162,14 @@ func AnalyzeIPA(name, ipaPath, summary string) (*ApplePackage, error) {
 	ipaPath = ipaPath2
 	err = util.RunCmd(fmt.Sprintf("cp %s/Payload/%s.app/AppIcon60x60@3x.png %s",ipaPath,appInfo.Info.CFBundleExecutable,setting.PathSetting.UploadPath + name + ".png"))
 	if err != nil {
-		log.Printf("%s", err.Error())
-		return nil, err
+		err = util.RunCmd(fmt.Sprintf("cp %s/Payload/%s.app/AppIcon76x76@2x.png %s",ipaPath,appInfo.Info.CFBundleExecutable,setting.PathSetting.UploadPath + name + ".png"))
+		if err != nil {
+		    err = util.RunCmd(fmt.Sprintf("cp %s/Payload/%s.app/AppIcon76x76@2x~ipad.png %s",ipaPath,appInfo.Info.CFBundleExecutable,setting.PathSetting.UploadPath + name + ".png"))
+		    if err != nil {
+		        log.Printf("%s", err.Error())
+	        	return nil, err
+		    }
+		}
 	}
 	return &ApplePackage{
 		ID:               applePackage.ID,
