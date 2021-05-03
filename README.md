@@ -57,7 +57,7 @@ docker-compose up
 1. 添加Apple开发者账号(绑定App Store Connect API)
 1. 根据描述文件获得用户设备的UDID
 1. 借助App Store Connect API在开发者中心添加UDID、创建证书等
-1. 重签名（使用isign开源项目实现在linux服务器上重签名） 
+1. 重签名（使用zsign开源项目实现在linux服务器上重签名） 
 1. 将ipa包上传到服务器上，配置itms-service服务来做分发
 
 > API
